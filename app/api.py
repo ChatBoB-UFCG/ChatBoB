@@ -1,23 +1,12 @@
-import copy
-import os
-from threading import Lock
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from app.core.extractor import ExtractorAgent
-from app.core.schema import Schema
-from app.utils.session_storage import save_session_data
+from app.services.session_service import SessionService, SessionServiceError
 
 
-app = FastAPI(title="ChatBoB API")
-schema_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "examples", "schema_example.json")
-schema = Schema.load_from_file(schema_path)
-agent = ExtractorAgent(schema)
-
-sessions: Dict[str, Dict[str, Any]] = {}
-session_lock = Lock()
+router = APIRouter()
 
 
 class SessionRequest(BaseModel):
@@ -28,25 +17,8 @@ class MessageRequest(SessionRequest):
     message: str = Field(min_length=1)
 
 
-def _new_state() -> Dict[str, Any]:
-    greeting = {
-        "role": "assistant",
-        "content": "Olá! Sou o ChatBoB, como posso te chamar?",
-    }
-    return {
-        "last_user_message": "",
-        "last_asked_question": "",
-        "schema": schema,
-        "extracted": {},
-        "missing_fields": [],
-        "question_to_ask": None,
-        "final_json": None,
-        "context_messages": [greeting],
-        "status_finished": False,
-        "next": None,
-        "logs": [],
-        "_session_saved": False,
-    }
+def get_session_service(request: Request) -> SessionService:
+    return request.app.state.session_service
 
 
 def _response(session_id: str, state: Dict[str, Any], message: Optional[str] = None) -> Dict[str, Any]:
@@ -75,69 +47,43 @@ def _response(session_id: str, state: Dict[str, Any], message: Optional[str] = N
     }
 
 
-def _save_finished_session(state: Dict[str, Any]) -> None:
-    if not state.get("status_finished") or state.get("final_json") is None or state.get("_session_saved"):
-        return
-    try:
-        save_session_data(state)
-    except Exception:
-        raise HTTPException(status_code=500, detail="Falha ao salvar os dados da sessão.") from None
-    state["_session_saved"] = True
+def _to_http_exception(error: SessionServiceError) -> HTTPException:
+    return HTTPException(status_code=error.status_code, detail=error.detail)
 
 
-@app.get("/health")
+@router.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/start")
-def start_session(request: SessionRequest) -> Dict[str, Any]:
+@router.post("/start")
+def start_session(
+    request: SessionRequest,
+    service: SessionService = Depends(get_session_service),
+) -> Dict[str, Any]:
     session_id = request.session_id.strip()
     if not session_id:
         raise HTTPException(status_code=422, detail="session_id não pode ficar vazio.")
 
-    with session_lock:
-        state = sessions.get(session_id)
-        if state is not None:
-            return _response(session_id, state)
-
-        active_session = next(
-            (key for key, value in sessions.items() if not value.get("status_finished")),
-            None,
-        )
-        if active_session is not None:
-            raise HTTPException(status_code=409, detail="Já existe uma sessão ativa.")
-
-        state = _new_state()
-        sessions[session_id] = state
-        greeting = state["context_messages"][0]["content"]
-        return _response(session_id, state, greeting)
+    try:
+        state, greeting = service.start(session_id)
+    except SessionServiceError as error:
+        raise _to_http_exception(error) from error
+    return _response(session_id, state, greeting)
 
 
-@app.post("/message")
-def send_message(request: MessageRequest) -> Dict[str, Any]:
+@router.post("/message")
+def send_message(
+    request: MessageRequest,
+    service: SessionService = Depends(get_session_service),
+) -> Dict[str, Any]:
     session_id = request.session_id.strip()
     message = request.message.strip()
     if not session_id or not message:
         raise HTTPException(status_code=422, detail="session_id e message não podem ficar vazios.")
 
-    with session_lock:
-        state = sessions.get(session_id)
-        if state is None:
-            raise HTTPException(status_code=404, detail="Sessão não encontrada. Inicie uma sessão primeiro.")
-
-        if state.get("status_finished"):
-            return _response(session_id, state)
-
-        updated_state = copy.deepcopy(state)
-        try:
-            updates = agent.feed_message(message, updated_state)
-            if isinstance(updates, dict):
-                updated_state.update(updates)
-        except Exception:
-            raise HTTPException(status_code=500, detail="Falha ao processar a mensagem.") from None
-
-        sessions[session_id] = updated_state
-        result = _response(session_id, updated_state)
-        _save_finished_session(updated_state)
-        return result
+    try:
+        state = service.process_message(session_id, message)
+    except SessionServiceError as error:
+        raise _to_http_exception(error) from error
+    return _response(session_id, state)

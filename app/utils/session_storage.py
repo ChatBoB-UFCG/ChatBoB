@@ -4,8 +4,6 @@ import boto3
 from datetime import datetime
 from typing import Dict, Any
 
-import streamlit as st
-
 def save_s3_object(s3_client, bucket: str, key: str, data: Any):
     """Auxiliar para salvar JSON no S3"""
     try:
@@ -22,6 +20,8 @@ def save_session_data(state: Dict[str, Any], base_dir: str = "conversation_logs"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
     
     try:
+        import streamlit as st
+
         secrets = st.secrets
         bucket_name = secrets.get("S3_BUCKET_NAME")
         aws_region = secrets.get("AWS_REGION", "us-east-2")

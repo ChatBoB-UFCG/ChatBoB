@@ -85,7 +85,7 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 
-python -m uvicorn app.api:app --reload --port 8000
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
 The API is available locally at `http://127.0.0.1:8000`. Interactive documentation is available at `http://127.0.0.1:8000/docs`.

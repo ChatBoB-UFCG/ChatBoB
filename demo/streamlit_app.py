@@ -12,7 +12,7 @@ if repo_root not in sys.path:
 
 from app.core.schema import Schema
 from app.core.extractor import ExtractorAgent
-from app.utils.logger import save_session_data
+from app.utils.session_storage import save_session_data
 
 st.set_page_config(page_title="ChatBoB", page_icon="🤖")
 
