@@ -1,6 +1,9 @@
-conversation_logs/
 .env
+.venv/
 .toml
+plan.md
 .streamlit/
-consolidado_geral.txt
 resultados/
+__pycache__/
+conversation_logs/
+consolidado_geral.txt

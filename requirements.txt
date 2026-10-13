@@ -1,7 +1,10 @@
 langchain
 langgraph
 streamlit
+python-dotenv
 langchain-openai
 langchain-google-genai
 openai
 boto3
+fastapi
+uvicorn

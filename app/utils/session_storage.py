@@ -21,11 +21,19 @@ def save_s3_object(s3_client, bucket: str, key: str, data: Any):
 def save_session_data(state: Dict[str, Any], base_dir: str = "conversation_logs"):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
     
-    # Recupera configurações via secrets.toml
-    bucket_name = st.secrets.get("S3_BUCKET_NAME")
-    aws_region = st.secrets.get("AWS_REGION", "us-east-2")
-    aws_access_key = st.secrets.get("AWS_ACCESS_KEY_ID")
-    aws_secret_key = st.secrets.get("AWS_SECRET_ACCESS_KEY")
+    try:
+        secrets = st.secrets
+        bucket_name = secrets.get("S3_BUCKET_NAME")
+        aws_region = secrets.get("AWS_REGION", "us-east-2")
+        aws_access_key = secrets.get("AWS_ACCESS_KEY_ID")
+        aws_secret_key = secrets.get("AWS_SECRET_ACCESS_KEY")
+    except Exception:
+        bucket_name = None
+        aws_region = os.getenv("AWS_REGION", "us-east-2")
+        aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
+        aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+
+    bucket_name = bucket_name or os.getenv("S3_BUCKET_NAME")
     
     if bucket_name:
         # --- MODO S3 ---

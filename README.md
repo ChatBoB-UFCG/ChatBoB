@@ -55,15 +55,13 @@ The agent follows a continuous analysis and interaction cycle:
 pip install -r requirements.txt
 ```
 
-3. Configure credentials:
+3. Configure credentials by copying `.env.example` to `.env` and adding your OpenAI API key (or another configured LLM provider):
 
-This project uses `streamlit.secrets` by default. Create a file named `.streamlit/secrets.toml`:
-
-```toml
-open_ai_key = "sk-..."
+```env
+OPENAI_API_KEY=sk-...
 ```
 
-> **Note:** If running outside Streamlit, configure the `OPENAI_API_KEY` environment variable or adapt the `app/core/llm.py` file.
+The application loads this variable from `.env` when it starts.
 
 ---
 
@@ -76,6 +74,31 @@ streamlit run demo/streamlit_app.py
 ```
 
 This opens a chat interface where you can interact with the agent and observe the JSON being built live.
+
+---
+
+## 🖥️ Running the API (FastAPI)
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+python -m uvicorn app.api:app --reload --port 8000
+```
+
+The API is available locally at `http://127.0.0.1:8000`. Interactive documentation is available at `http://127.0.0.1:8000/docs`.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/health` | Checks whether the API is running. |
+| `POST` | `/start` | Creates or resumes a conversation session. |
+| `POST` | `/message` | Sends a message to an existing session. |
+
+Both session endpoints return the latest `message`/`question_to_ask`, `finished` status, extracted fields, missing fields, conversation context, logs, and `final_json` when available.
 
 ---
 
