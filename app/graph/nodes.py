@@ -55,7 +55,13 @@ def extractor_node(state):
     except Exception:
         partial = {}
         state['logs'].append("EXTRACTOR: falha ao parsear JSON, extraído vazio.")
-    
+
+    if not isinstance(partial, dict):
+        state['logs'].append(
+            f"EXTRACTOR: resposta não era um objeto JSON ({type(partial).__name__}), extraído vazio."
+        )
+        partial = {}
+
     extracted = state["extracted"]
     extracted.update(partial)
 
