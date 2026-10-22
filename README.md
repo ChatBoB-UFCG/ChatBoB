@@ -100,6 +100,8 @@ The API is available locally at `http://127.0.0.1:8000`. Interactive documentati
 
 Both session endpoints return the latest `message`/`question_to_ask`, `finished` status, extracted fields, missing fields, conversation context, logs, and `final_json` when available.
 
+When `finished` is `true`, `message` is always the closing message "Obrigado! Suas respostas foram registradas.". This applies to the turn that completes the collection, to any later `/message`, and to `/start` of a completed session. A completed session does not call the LLM again.
+
 ---
 
 ## 💻 Developer Guide: Programmatic Usage

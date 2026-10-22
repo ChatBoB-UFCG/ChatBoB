@@ -8,6 +8,8 @@ from app.services.session_service import SessionService, SessionServiceError
 
 router = APIRouter()
 
+CLOSING_MESSAGE = "Obrigado! Suas respostas foram registradas."
+
 
 class SessionRequest(BaseModel):
     session_id: str = Field(min_length=1)
@@ -22,10 +24,10 @@ def get_session_service(request: Request) -> SessionService:
 
 
 def _response(session_id: str, state: Dict[str, Any], message: Optional[str] = None) -> Dict[str, Any]:
+    if state.get("status_finished"):
+        message = CLOSING_MESSAGE
     if message is None:
         message = state.get("question_to_ask")
-    if message is None and state.get("status_finished"):
-        message = "Extração concluída."
     if message is None:
         assistant_messages = [
             item.get("content")
