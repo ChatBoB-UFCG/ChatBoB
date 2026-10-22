@@ -1,6 +1,10 @@
 import copy
+import logging
 from threading import Lock
 from typing import Any, Callable, Dict, Optional, Tuple
+
+
+logger = logging.getLogger(__name__)
 
 
 class SessionServiceError(Exception):
@@ -74,13 +78,14 @@ class SessionService:
                 if isinstance(updates, dict):
                     updated_state.update(updates)
             except Exception:
+                logger.exception("Falha ao processar a mensagem da sessão %s", session_id)
                 raise SessionServiceError(500, "Falha ao processar a mensagem.") from None
 
             self.sessions[session_id] = updated_state
-            self._save_finished_session(updated_state)
+            self._save_finished_session(session_id, updated_state)
             return updated_state
 
-    def _save_finished_session(self, state: Dict[str, Any]) -> None:
+    def _save_finished_session(self, session_id: str, state: Dict[str, Any]) -> None:
         if (
             not state.get("status_finished")
             or state.get("final_json") is None
@@ -90,6 +95,7 @@ class SessionService:
         try:
             self.save_session(state)
         except Exception:
+            logger.exception("Falha ao salvar os dados da sessão %s", session_id)
             raise SessionServiceError(
                 500,
                 "Falha ao salvar os dados da sessão.",
