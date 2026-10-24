@@ -1,9 +1,15 @@
 .env
 .venv/
 .toml
-plan.md
 .streamlit/
 resultados/
 __pycache__/
 conversation_logs/
 consolidado_geral.txt
+
+# Só os README.md são versionados
+*.md
+!README.md
+
+# Testes fora do versionamento, por enquanto
+tests/
