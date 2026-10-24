@@ -70,6 +70,8 @@ class SessionService:
                 )
 
             if state.get("status_finished"):
+                # Tenta de novo se o salvamento falhou no turno que concluiu.
+                self._save_finished_session(session_id, state)
                 return state
 
             updated_state = copy.deepcopy(state)
