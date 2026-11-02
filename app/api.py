@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from app.core.schema import Schema
 from app.services.session_service import SessionService, SessionServiceError
 
 
@@ -13,6 +14,14 @@ CLOSING_MESSAGE = "Obrigado! Suas respostas foram registradas."
 
 class SessionRequest(BaseModel):
     session_id: str = Field(min_length=1)
+
+
+class StartRequest(SessionRequest):
+    schema_fields: Optional[Dict[str, Dict[str, Any]]] = Field(
+        default=None,
+        alias="schema",
+        min_length=1,
+    )
 
 
 class MessageRequest(SessionRequest):
@@ -60,15 +69,16 @@ def health() -> Dict[str, str]:
 
 @router.post("/start")
 def start_session(
-    request: SessionRequest,
+    request: StartRequest,
     service: SessionService = Depends(get_session_service),
 ) -> Dict[str, Any]:
     session_id = request.session_id.strip()
     if not session_id:
         raise HTTPException(status_code=422, detail="session_id não pode ficar vazio.")
 
+    schema = Schema(request.schema_fields) if request.schema_fields is not None else None
     try:
-        state, greeting = service.start(session_id)
+        state, greeting = service.start(session_id, schema)
     except SessionServiceError as error:
         raise _to_http_exception(error) from error
     return _response(session_id, state, greeting)

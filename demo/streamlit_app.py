@@ -20,7 +20,7 @@ st.set_page_config(page_title="ChatBoB", page_icon="🤖")
 # Carrega schema e agente
 schema_path = os.path.join(repo_root, "examples", "schema_example.json")
 schema = Schema.load_from_file(schema_path)
-agent = ExtractorAgent(schema)
+agent = ExtractorAgent()
 
 # Estado inicial padrão
 DEFAULT_STATE: Dict[str, Any] = {

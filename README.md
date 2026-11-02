@@ -133,7 +133,7 @@ my_schema = Schema(schema_dict)
 # or Schema.load_from_file("schema.json")
 
 # 2. Initialize the Agent
-agent = ExtractorAgent(schema=my_schema)
+agent = ExtractorAgent()
 
 # 3. Initialize the Conversation State
 state = {

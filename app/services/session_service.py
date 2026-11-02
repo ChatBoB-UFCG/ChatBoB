@@ -15,14 +15,19 @@ class SessionServiceError(Exception):
 
 
 class SessionService:
-    def __init__(self, agent: Any, save_session: Callable[[Dict[str, Any]], Any], schema: Any):
+    def __init__(
+        self,
+        agent: Any,
+        save_session: Callable[[Dict[str, Any]], Any],
+        default_schema: Any,
+    ):
         self.agent = agent
         self.save_session = save_session
-        self.schema = schema
+        self.default_schema = default_schema
         self.sessions: Dict[str, Dict[str, Any]] = {}
         self.lock = Lock()
 
-    def _new_state(self) -> Dict[str, Any]:
+    def _new_state(self, schema: Any) -> Dict[str, Any]:
         greeting = {
             "role": "assistant",
             "content": "Olá! Sou o ChatBoB, como posso te chamar?",
@@ -30,7 +35,7 @@ class SessionService:
         return {
             "last_user_message": "",
             "last_asked_question": "",
-            "schema": self.schema,
+            "schema": schema,
             "extracted": {},
             "missing_fields": [],
             "question_to_ask": None,
@@ -42,7 +47,11 @@ class SessionService:
             "_session_saved": False,
         }
 
-    def start(self, session_id: str) -> Tuple[Dict[str, Any], Optional[str]]:
+    def start(
+        self,
+        session_id: str,
+        schema: Optional[Any] = None,
+    ) -> Tuple[Dict[str, Any], Optional[str]]:
         with self.lock:
             state = self.sessions.get(session_id)
             if state is not None:
@@ -55,7 +64,7 @@ class SessionService:
             if active_session is not None:
                 raise SessionServiceError(409, "Já existe uma sessão ativa.")
 
-            state = self._new_state()
+            state = self._new_state(schema if schema is not None else self.default_schema)
             self.sessions[session_id] = state
             greeting = state["context_messages"][0]["content"]
             return state, greeting

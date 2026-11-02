@@ -2,8 +2,7 @@ from app.graph.builder import build_graph
 from app.core.schema import Schema
 
 class ExtractorAgent:
-    def __init__(self, schema: Schema):
-        self.schema = schema
+    def __init__(self):
         self.graph = build_graph()
 
     def feed_message(self, message: str, state: dict):
@@ -13,5 +12,4 @@ class ExtractorAgent:
             "role": "user",
             "content": state["last_user_message"]
         })
-        state["schema"] = self.schema
         return self.graph.invoke(state)

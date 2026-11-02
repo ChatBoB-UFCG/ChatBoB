@@ -17,7 +17,7 @@ def create_app() -> FastAPI:
         "schema_example.json",
     )
     schema = Schema.load_from_file(schema_path)
-    agent = ExtractorAgent(schema)
+    agent = ExtractorAgent()
     application.state.session_service = SessionService(agent, save_session_data, schema)
     application.include_router(router)
     return application
