@@ -25,6 +25,7 @@ class SessionService:
         self.save_session = save_session
         self.default_schema = default_schema
         self.sessions: Dict[str, Dict[str, Any]] = {}
+        self.session_locks: Dict[str, Lock] = {}
         self.lock = Lock()
 
     def _new_state(self, schema: Any) -> Dict[str, Any]:
@@ -57,26 +58,23 @@ class SessionService:
             if state is not None:
                 return state, None
 
-            active_session = next(
-                (key for key, value in self.sessions.items() if not value.get("status_finished")),
-                None,
-            )
-            if active_session is not None:
-                raise SessionServiceError(409, "Já existe uma sessão ativa.")
-
             state = self._new_state(schema if schema is not None else self.default_schema)
             self.sessions[session_id] = state
+            self.session_locks[session_id] = Lock()
             greeting = state["context_messages"][0]["content"]
             return state, greeting
 
     def process_message(self, session_id: str, message: str) -> Dict[str, Any]:
         with self.lock:
-            state = self.sessions.get(session_id)
-            if state is None:
-                raise SessionServiceError(
-                    404,
-                    "Sessão não encontrada. Inicie uma sessão primeiro.",
-                )
+            session_lock = self.session_locks.get(session_id)
+        if session_lock is None:
+            raise SessionServiceError(
+                404,
+                "Sessão não encontrada. Inicie uma sessão primeiro.",
+            )
+
+        with session_lock:
+            state = self.sessions[session_id]
 
             if state.get("status_finished"):
                 # Tenta de novo se o salvamento falhou no turno que concluiu.
@@ -92,7 +90,8 @@ class SessionService:
                 logger.exception("Falha ao processar a mensagem da sessão %s", session_id)
                 raise SessionServiceError(500, "Falha ao processar a mensagem.") from None
 
-            self.sessions[session_id] = updated_state
+            with self.lock:
+                self.sessions[session_id] = updated_state
             self._save_finished_session(session_id, updated_state)
             return updated_state
 
