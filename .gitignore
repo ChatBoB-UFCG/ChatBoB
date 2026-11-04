@@ -7,9 +7,9 @@ __pycache__/
 conversation_logs/
 consolidado_geral.txt
 
-# Só os README.md são versionados
+# Only README.md files are tracked
 *.md
 !README.md
 
-# Testes fora do versionamento, por enquanto
+# Tests are not tracked for now
 tests/
