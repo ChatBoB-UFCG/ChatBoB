@@ -98,6 +98,19 @@ The API is available locally at `http://127.0.0.1:8000`. Interactive documentati
 | `POST` | `/start` | Creates or resumes a conversation session. |
 | `POST` | `/message` | Sends a message to an existing session. |
 
+`POST /start` requires `session_id` and `schema`, an object that maps each field name to its definition (`description`, `type`, `required`), in the same format as `examples/schema_example.json`:
+
+```json
+{
+  "session_id": "3f1c...",
+  "schema": {
+    "city": { "description": "City where the person lives.", "type": "String", "required": true }
+  }
+}
+```
+
+Without `schema`, or with `schema: null`, the API responds 422 and does not create the session. Each session uses the schema it was created with until it ends: a new `/start` of an existing session resumes it and ignores the `schema` sent.
+
 Both session endpoints return the latest `message`/`question_to_ask`, `finished` status, extracted fields, missing fields, conversation context, logs, and `final_json` when available.
 
 When `finished` is `true`, `message` is always the closing message "Obrigado! Suas respostas foram registradas.". This applies to the turn that completes the collection, to any later `/message`, and to `/start` of a completed session. A completed session does not call the LLM again.

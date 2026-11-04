@@ -19,11 +19,9 @@ class SessionService:
         self,
         agent: Any,
         save_session: Callable[[Dict[str, Any]], Any],
-        default_schema: Any,
     ):
         self.agent = agent
         self.save_session = save_session
-        self.default_schema = default_schema
         self.sessions: Dict[str, Dict[str, Any]] = {}
         self.session_locks: Dict[str, Lock] = {}
         self.lock = Lock()
@@ -48,17 +46,13 @@ class SessionService:
             "_session_saved": False,
         }
 
-    def start(
-        self,
-        session_id: str,
-        schema: Optional[Any] = None,
-    ) -> Tuple[Dict[str, Any], Optional[str]]:
+    def start(self, session_id: str, schema: Any) -> Tuple[Dict[str, Any], Optional[str]]:
         with self.lock:
             state = self.sessions.get(session_id)
             if state is not None:
                 return state, None
 
-            state = self._new_state(schema if schema is not None else self.default_schema)
+            state = self._new_state(schema)
             self.sessions[session_id] = state
             self.session_locks[session_id] = Lock()
             greeting = state["context_messages"][0]["content"]

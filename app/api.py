@@ -17,11 +17,7 @@ class SessionRequest(BaseModel):
 
 
 class StartRequest(SessionRequest):
-    schema_fields: Optional[Dict[str, Dict[str, Any]]] = Field(
-        default=None,
-        alias="schema",
-        min_length=1,
-    )
+    schema_fields: Dict[str, Dict[str, Any]] = Field(alias="schema", min_length=1)
 
 
 class MessageRequest(SessionRequest):
@@ -76,9 +72,8 @@ def start_session(
     if not session_id:
         raise HTTPException(status_code=422, detail="session_id não pode ficar vazio.")
 
-    schema = Schema(request.schema_fields) if request.schema_fields is not None else None
     try:
-        state, greeting = service.start(session_id, schema)
+        state, greeting = service.start(session_id, Schema(request.schema_fields))
     except SessionServiceError as error:
         raise _to_http_exception(error) from error
     return _response(session_id, state, greeting)
