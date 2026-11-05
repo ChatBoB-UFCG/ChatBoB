@@ -29,7 +29,7 @@ class SessionService:
     def _new_state(self, schema: Any) -> Dict[str, Any]:
         greeting = {
             "role": "assistant",
-            "content": "Olá! Sou o ChatBoB, como posso te chamar?",
+            "content": "Olá! Sou o ChatBoB 🤖\n\nPara coletar suas respostas, funciona assim:\n\n- eu faço uma pergunta por vez;\n- você responde com suas palavras.\n\nPodemos começar?",
         }
         return {
             "last_user_message": "",
